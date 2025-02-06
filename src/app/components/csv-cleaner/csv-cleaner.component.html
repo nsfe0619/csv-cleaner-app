@@ -1,0 +1,18 @@
+<div class="csv-uploader">
+  <h2>CSV 上傳與資料清洗</h2>
+
+  <input type="file" (change)="handleFileUpload($event)" accept=".csv">
+
+  <div *ngIf="fileSizeBefore > 0">
+    <p>📂 原始檔案大小: {{ fileSizeBefore | number }} Bytes</p>
+  </div>
+
+  <button (click)="processCsv()" [disabled]="!rawCsv">清洗 CSV</button>
+
+  <div *ngIf="cleanedCsv">
+    <p>✅ 清洗完成！</p>
+    <p>📂 清洗後檔案大小: {{ fileSizeAfter | number }} Bytes</p>
+    <p>⏱️ 清洗時間: {{ cleaningTime }} 毫秒</p>
+    <button (click)="downloadCsv()">下載清洗後的 CSV</button>
+  </div>
+</div>
