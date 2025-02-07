@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CsvCleanerService } from 'src/app/services/csv-cleaner.service';
+import { WasmLoaderService } from 'src/app/services/wasm-loader.service';
 
 @Component({
   selector: 'app-csv-cleaner',
@@ -8,17 +9,23 @@ import { CsvCleanerService } from 'src/app/services/csv-cleaner.service';
 })
 export class CsvCleanerComponent {
   rawCsv: string = '';
-  cleanedCsv: string = '';
-  fileSizeBefore: number = 0; // ✅ 原始 CSV 檔案大小 (Bytes)
-  fileSizeAfter: number = 0; // ✅ 清洗後 CSV 檔案大小 (Bytes)
-  cleaningTime: number = 0; // ✅ 清洗所需時間 (毫秒)
+  cleanedCsvJs: string = '';
+  cleanedCsvWasm: string = '';
+  fileSizeBefore: number = 0;
+  fileSizeAfterJs: number = 0;
+  fileSizeAfterWasm: number = 0;
+  cleaningTimeJs: number = 0;
+  cleaningTimeWasm: number = 0;
 
-  constructor(private csvCleanerService: CsvCleanerService) {}
+  constructor(
+    private csvCleanerService: CsvCleanerService,
+    private wasmLoader: WasmLoaderService
+  ) {}
 
   handleFileUpload(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
-      this.fileSizeBefore = file.size; // ✅ 取得原始 CSV 檔案大小 (Bytes)
+      this.fileSizeBefore = file.size;
       const reader = new FileReader();
 
       reader.onload = () => {
@@ -29,28 +36,44 @@ export class CsvCleanerComponent {
     }
   }
 
-  processCsv() {
+  processCsvJs() {
     if (!this.rawCsv) return;
 
-    const startTime = performance.now(); // ✅ 記錄開始時間
+    const startTime = performance.now();
+    this.cleanedCsvJs = this.csvCleanerService.cleanData(this.rawCsv);
+    const endTime = performance.now();
 
-    this.cleanedCsv = this.csvCleanerService.cleanData(this.rawCsv);
-
-    const endTime = performance.now(); // ✅ 記錄結束時間
-    this.cleaningTime = Math.round(endTime - startTime); // ✅ 計算清洗所需時間 (毫秒)
-    this.fileSizeAfter = new Blob([this.cleanedCsv]).size; // ✅ 計算清洗後的檔案大小
+    this.cleaningTimeJs = Math.round(endTime - startTime);
+    this.fileSizeAfterJs = new Blob([this.cleanedCsvJs]).size;
   }
 
-  downloadCsv() {
-    if (!this.cleanedCsv) {
-      alert("沒有清洗後的數據可下載");
+  async processCsvWasm() {
+    if (!this.rawCsv) return;
+
+    try {
+      const startTime = performance.now();
+      this.cleanedCsvWasm = await this.wasmLoader.cleanCsv(this.rawCsv);
+      const endTime = performance.now();
+
+      this.cleaningTimeWasm = Math.round(endTime - startTime);
+      this.fileSizeAfterWasm = new Blob([this.cleanedCsvWasm]).size;
+    } catch (error) {
+      console.error("WASM 清洗失敗:", error);
+    }
+  }
+
+  downloadCsv(type: 'js' | 'wasm') {
+    const csvData = type === 'js' ? this.cleanedCsvJs : this.cleanedCsvWasm;
+
+    if (!csvData) {
+      alert(`沒有清洗後的數據可下載 (${type === 'js' ? 'JavaScript' : 'WASM'})`);
       return;
     }
 
-    const blob = new Blob([this.cleanedCsv], { type: 'text/csv' });
+    const blob = new Blob([csvData], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'cleaned_data.csv';
+    a.download = `cleaned_data_${type}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   }
