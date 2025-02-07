@@ -9,42 +9,45 @@ export function cleanData(ptr: usize, len: i32): usize {
   let rows: string[] = csvStr.split("\n");
   if (rows.length < 2) return ptr; // ✅ 確保 CSV 至少有標題行和數據行
 
+  let headers: string[] = rows[0].split(",");
   let cleanedRows: string[] = [];
   cleanedRows.push(rows[0]); // ✅ 保留第一行標題
 
   let seenIds: Set<string> = new Set();
 
-  for (let i: i32 = 1; i < rows.length; i++) { // ✅ 跳過第一行標題
+  // ✅ 建立清洗規則 (可擴充)
+  let cleaningRules = new Map<string, (value: string) => string>();
+  cleaningRules.set("email", validateEmail);
+  cleaningRules.set("phone", formatPhone);
+  cleaningRules.set("age", parseAge);
+  cleaningRules.set("credit_card", maskSensitiveData);
+
+  for (let i: i32 = 1; i < rows.length; i++) { // ✅ 跳過標題行
     let columns: string[] = rows[i].split(",");
+    if (columns.length !== headers.length) continue; // ✅ 確保欄位數對齊標題
 
-    if (columns.length < 7) continue; // ✅ 確保至少有 7 個欄位 (包含信用卡)
+    let cleanedColumns: string[] = [];
+    for (let j: i32 = 0; j < headers.length; j++) {
+      let header = headers[j].trim();
+      let value = columns[j].trim();
 
-    let id = columns[0].trim();
-    let name = columns[1].trim();
-    let age = columns[2].trim();
-    let phone = formatPhone(columns[3]);
-    let date = formatDate(columns[4]);
-    let email = columns[5].trim();
-    let creditCard = maskSensitiveData(columns[6].trim()); // ✅ 保留信用卡資料
+      // ✅ 如果該欄位有清洗規則，則逐個執行
+      if (cleaningRules.has(header)) {
+        let cleanFunc = cleaningRules.get(header);
+        value = cleanFunc(value);
+      }
 
-    // ✅ 年齡處理：空白 或 非數字 或 超過 100 歲，標記為 "INVALID"
-    let isAgeInvalid: bool = age.length === 0;
-    let ageNum = parseInt(age);
-    if (isNaN(ageNum) || ageNum < 0 || ageNum > 100) {
-      isAgeInvalid = true;
-      age = "INVALID";
+      // ✅ 確保空值變成 "INVALID"
+      if (value.length === 0) value = "INVALID";
+
+      cleanedColumns.push(value);
     }
 
-    // ✅ Email 格式檢查，保持 `INVALID` 的 Email
-    if (!validateEmail(email)) {
-      email = "INVALID"; // ✅ 讓 Email 變成 INVALID，但不刪除
+    let id = cleanedColumns[0];
+    if (!seenIds.has(id)) {
+      seenIds.add(id);
+      cleanedRows.push(cleanedColumns.join(","));
     }
-
-    // ✅ 避免重複 ID
-    if (seenIds.has(id)) continue;
-    seenIds.add(id);
-
-    cleanedRows.push(id + "," + name + "," + age + "," + phone + "," + date + "," + email + "," + creditCard);
   }
 
   let cleanedCsv = cleanedRows.join("\n");
@@ -59,47 +62,43 @@ export function cleanData(ptr: usize, len: i32): usize {
 // ✅ 格式化電話號碼為 `+1-XXX-XXX-XXXX` 或 `"INVALID"`
 function formatPhone(phone: string): string {
   let digits = removeNonDigits(phone);
-  if (digits.length === 0 ||digits.length < 10) return "INVALID"; // ✅ 如果沒有數字，設為 INVALID
-  digits = digits.slice(-10); // ✅ 取最後 10 碼
+  if (digits.length === 0) return "INVALID";
+  if (digits.length < 10) return "+1-000-000-0000";
+  digits = digits.slice(-10);
   return "+1-" + digits.slice(0, 3) + "-" + digits.slice(3, 6) + "-" + digits.slice(6);
 }
 
-// ✅ 格式化日期為 `YYYY-MM-DD`
-function formatDate(date: string): string {
-  let parts = date.split("/");
-  if (parts.length !== 3) return "INVALID"; // ✅ 預設無效日期
-  return parts[2] + "-" + parts[0].padStart(2, "0") + "-" + parts[1].padStart(2, "0");
+// ✅ 年齡轉換成數字，異常則標記為 INVALID
+function parseAge(age: string): string {
+  let ageNum = parseInt(age);
+  return isNaN(ageNum) || ageNum < 0 || ageNum > 100 ? "INVALID" : ageNum.toString();
 }
 
-// ✅ Email 驗證 (簡單判斷 `@` 和 `.` 必須存在)
-// ✅ Email 驗證 (確保 `username@domain.tld` 格式正確)
-function validateEmail(email: string): boolean {
+// ✅ Email 格式驗證，錯誤則標記為 "INVALID"
+function validateEmail(email: string): string {
   let atIndex = email.indexOf("@");
   let dotIndex = email.lastIndexOf(".");
 
-  // ✅ 必須包含 `@` 和 `.`，且 `@` 不能是第一個字元
   if (atIndex <= 0 || dotIndex <= atIndex + 1 || dotIndex === email.length - 1) {
-    return false;
+    return "INVALID";
   }
-
-  // ✅ `@` 只能出現一次
   if (email.indexOf("@", atIndex + 1) !== -1) {
-    return false;
+    return "INVALID";
   }
-
-  // ✅ `..` 不能出現
   if (email.indexOf("..") !== -1) {
-    return false;
+    return "INVALID";
   }
-
-  return true;
+  return email;
 }
+
+// ✅ 信用卡遮蔽 (前 12 碼變 `****`)
 function maskSensitiveData(card: string): string {
   if (card.length < 16) return "INVALID";
   let cleanCard = removeNonDigits(card);
   return "****-****-****-" + cleanCard.slice(-4);
 }
 
+// ✅ 移除所有非數字字符
 function removeNonDigits(input: string): string {
   let result = "";
   for (let i: i32 = 0; i < input.length; i++) {

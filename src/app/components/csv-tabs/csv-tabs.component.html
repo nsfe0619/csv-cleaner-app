@@ -1,0 +1,11 @@
+<div class="tabs-container">
+  <div class="tabs">
+    <button [class.active]="activeTab === 'clean'" (click)="switchTab('clean')">🧹 清洗 CSV</button>
+    <button [class.active]="activeTab === 'create'" (click)="switchTab('create')">📝 生成 CSV</button>
+  </div>
+
+  <div class="tab-content">
+    <app-csv-cleaner *ngIf="activeTab === 'clean'"></app-csv-cleaner>
+    <app-csv-creator *ngIf="activeTab === 'create'"></app-csv-creator>
+  </div>
+</div>

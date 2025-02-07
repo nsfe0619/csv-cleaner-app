@@ -1,0 +1,53 @@
+<div class="creator-container">
+  <h3>📝 設定欄位並生成 CSV</h3>
+
+  <!-- ✅ 設定下載檔案名稱 -->
+  <label>📄 下載檔名:</label>
+  <input type="text" [(ngModel)]="fileName">
+
+  <!-- ✅ 設定產生筆數 -->
+  <label>🔢 產生筆數:</label>
+  <input type="number" [(ngModel)]="recordCount" min="1" max="1000" step="1">
+
+  <!-- ✅ 動態欄位設定表格 -->
+  <table>
+    <thead>
+      <tr>
+        <th>欄位名稱</th>
+        <th>資料格式</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let field of csvFields; let i = index">
+        <td>
+          <input [(ngModel)]="field.name" placeholder="請輸入欄位名稱">
+        </td>
+        <td>
+          <select [(ngModel)]="field.type">
+            <option *ngFor="let type of availableTypes" [value]="type.value">{{ type.label }}</option>
+          </select>
+        </td>
+        <td>
+          <button (click)="removeField(i)">❌</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <button (click)="addField()">➕ 新增欄位</button>
+  <button (click)="generateCsvData()">⚡ 產生資料</button>
+  <button (click)="downloadGeneratedCsv()">⬇️ 下載 CSV</button>
+
+  <!-- ✅ 顯示產生時間 & 檔案大小 -->
+  <div *ngIf="csvSize > 0">
+    <p>⏱ 產生時間: <strong>{{ generationTime }} 毫秒</strong></p>
+    <p>📁 下載檔案大小: <strong>{{ formattedFileSize }}</strong></p>
+  </div>
+
+  <!-- ✅ 產生的結果 (僅顯示前 10 筆) -->
+  <div *ngIf="csvData.length > 0" class="result-box">
+    <h3>📄 預覽前 10 筆 CSV 資料</h3>
+    <pre>{{ csvPreview }}</pre>
+  </div>
+</div>

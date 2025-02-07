@@ -1,26 +1,45 @@
-<div class="csv-uploader">
-  <h2>CSV 上傳與資料清洗</h2>
+<div class="cleaner-container">
+  <h3>🧹 CSV 清洗工具</h3>
 
+  <!-- ✅ CSV 檔案上傳 -->
   <input type="file" (change)="handleFileUpload($event)" accept=".csv">
 
+  <!-- ✅ 顯示原始檔案資訊 -->
   <div *ngIf="fileSizeBefore > 0">
-    <p>📂 原始檔案大小: {{ fileSizeBefore | number }} Bytes</p>
+    <p>📁 原始檔案大小: <strong>{{ formattedFileSizeBefore }}</strong></p>
   </div>
 
-  <button (click)="processCsvJs()" [disabled]="!rawCsv">清洗 CSV (JavaScript)</button>
-  <button (click)="processCsvWasm()" [disabled]="!rawCsv">清洗 CSV (WASM)</button>
-
-  <div *ngIf="cleanedCsvJs">
-    <h3>✅ JavaScript 清洗結果</h3>
-    <p>📂 清洗後檔案大小: {{ fileSizeAfterJs | number }} Bytes</p>
-    <p>⏱️ 清洗時間: {{ cleaningTimeJs }} 毫秒</p>
-    <button (click)="downloadCsv('js')">下載 (JavaScript)</button>
+  <!-- ✅ 預覽上傳的 CSV (前 10 筆) -->
+  <div *ngIf="rawCsvPreview">
+    <h3>📄 原始 CSV 預覽 (前 10 筆)</h3>
+    <pre>{{ rawCsvPreview }}</pre>
   </div>
 
-  <div *ngIf="cleanedCsvWasm">
-    <h3>✅ WASM 清洗結果</h3>
-    <p>📂 清洗後檔案大小: {{ fileSizeAfterWasm | number }} Bytes</p>
-    <p>⏱️ 清洗時間: {{ cleaningTimeWasm }} 毫秒</p>
-    <button (click)="downloadCsv('wasm')">下載 (WASM)</button>
+  <button (click)="processCsvJs()">⚡ 使用 JavaScript 清洗</button>
+  <button (click)="processCsvWasm()">⚡ 使用 WASM 清洗</button>
+
+  <!-- ✅ 顯示清洗後的檔案大小 & 耗時 -->
+  <div *ngIf="fileSizeAfterJs > 0">
+    <p>📁 JavaScript 清洗後檔案大小: <strong>{{ formattedFileSizeAfterJs }}</strong></p>
+    <p>⏱ JavaScript 清洗時間: <strong>{{ cleaningTimeJs }} 毫秒</strong></p>
   </div>
+
+  <div *ngIf="fileSizeAfterWasm > 0">
+    <p>📁 WASM 清洗後檔案大小: <strong>{{ formattedFileSizeAfterWasm }}</strong></p>
+    <p>⏱ WASM 清洗時間: <strong>{{ cleaningTimeWasm }} 毫秒</strong></p>
+  </div>
+
+  <!-- ✅ 預覽清洗後的 CSV (前 10 筆) -->
+  <div *ngIf="cleanedCsvJsPreview">
+    <h3>📄 JavaScript 清洗後 CSV 預覽 (前 10 筆)</h3>
+    <pre>{{ cleanedCsvJsPreview }}</pre>
+  </div>
+
+  <div *ngIf="cleanedCsvWasmPreview">
+    <h3>📄 WASM 清洗後 CSV 預覽 (前 10 筆)</h3>
+    <pre>{{ cleanedCsvWasmPreview }}</pre>
+  </div>
+
+  <button (click)="downloadCsv('js')">⬇️ 下載 JavaScript 清洗後 CSV</button>
+  <button (click)="downloadCsv('wasm')">⬇️ 下載 WASM 清洗後 CSV</button>
 </div>

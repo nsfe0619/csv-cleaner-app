@@ -6,63 +6,86 @@ import * as Papa from 'papaparse';
 })
 export class CsvCleanerService {
   cleanData(data: string): string {
-    let jsonData = this.parseCsv(data); // ✅ 先解析 CSV 字串
+    let jsonData = this.parseCsv(data);
+    if (jsonData.length === 0) return ""; // ✅ 空檔案處理
 
-    const cleanedData = jsonData
-      .filter(row => Object.values(row).some(value => value !== '')) // 1. 清除空行
-      .map(row => {
-        let formattedAge = this.parseAge(row.age); // 5. 處理年齡
-        return {
-          ...row,
-          phone: this.formatPhone(row.phone?.trim()) || 'INVALID', // 2. 格式標準化 (電話)
-          date: this.formatDate(row.date)||'INVALID', // 3. 格式標準化 (日期)
-          name: row.name?.trim() || '', // 4. 去除空白
-          age: formattedAge !== null ? formattedAge : 'INVALID', // ✅ 如果年齡異常則標記 `INVALID`
-          email: this.validateEmail(row.email?.trim()) ? row.email : 'INVALID', // 6. 格式驗證
-          credit_card: this.maskSensitiveData(row.credit_card), // 7. 敏感數據遮蔽
-        };
-      })
-      .reduce((acc, row) => {
-        if (!acc.some((item: { id: any }) => item.id === row.id)) acc.push(row); // 8. 去除重複數據
-        return acc;
-      }, []);
+    // ✅ 取得 CSV 標題 (第一行)
+    const headers = Object.keys(jsonData[0]);
 
-    // return Papa.unparse(cleanedData, { quotes: true, quoteChar: '"', delimiter: "," });
-    return Papa.unparse(cleanedData, { newline: "\n" });
-    // return Papa.unparse(cleanedData); // ✅ JSON 轉 CSV 回傳
+    // ✅ 動態規則映射 (可擴充)
+    const cleaningRules: { [key: string]: ((value: string) => string)[] } = {
+      email: [this.ensureNotEmpty, this.validateEmail], // ✅ Email: 空白變 INVALID + 格式檢查
+      phone: [this.ensureNotEmpty, this.formatPhone], // ✅ 電話: 空白變 INVALID + 格式標準化
+      age: [this.ensureNotEmpty, this.parseAge], // ✅ 年齡: 空白變 INVALID + 數字轉換
+      credit_card: [this.maskSensitiveData], // ✅ 信用卡: 遮蔽前 12 碼
+    };
+
+    // ✅ 清洗每筆數據
+    const cleanedData = jsonData.map(row => {
+      let cleanedRow: { [key: string]: string } = {};
+
+      headers.forEach(header => {
+        let value = row[header]?.trim() || "";
+
+        // ✅ 如果該欄位有對應的清洗規則，則逐個執行
+        if (cleaningRules[header]) {
+          cleaningRules[header].forEach(rule => {
+            value = rule(value);
+          });
+        }
+
+        cleanedRow[header] = value;
+      });
+
+      return cleanedRow;
+    });
+
+    return Papa.unparse(cleanedData, { quotes: true, delimiter: ",", newline: "\n" });
   }
 
-  private parseCsv(csvString: string): any[] { // ✅ 解析 CSV 為 JSON 陣列
+  private parseCsv(csvString: string): any[] {
     return Papa.parse(csvString, { header: true, skipEmptyLines: true }).data;
   }
 
+  // ✅ 如果為空，則變成 "INVALID"
+  private ensureNotEmpty(value: string): string {
+    return value.trim() === "" ? "INVALID" : value;
+  }
+
+  // ✅ 格式化電話號碼為 `+1-XXX-XXX-XXXX`
   private formatPhone(phone: string): string {
-    let digits = phone ? phone.replace(/\D/g, '') : '';
-    if (digits.length === 0) return 'INVALID'; // ✅ 如果電話為空則設為 "INVALID"
-    if (digits.length < 10) return '+1-000-000-0000'; // ✅ 預設無效電話
-    digits = digits.slice(-10); // 取最後 10 碼
+    let digits = phone.replace(/\D/g, '');
+    if (digits.length === 0) return "INVALID"; // ✅ 空值變 "INVALID"
+    if (digits.length < 10) return "+1-000-000-0000"; // ✅ 不足 10 碼填 0
+    digits = digits.slice(-10);
     return `+1-${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
   }
 
-  private formatDate(date: string | null): string {
-    if (!date || typeof date !== 'string' || !date.trim()) return ''; // ✅ 確保 `null` 或 `undefined` 不報錯
-    const parts = date.split('/');
-    if (parts.length !== 3) return ''; // ✅ 確保格式正確
-    const [month, day, year] = parts;
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  // ✅ 年齡轉換成數字，異常則標記為 INVALID
+  private parseAge(age: string): string {
+    let ageNum = parseInt(age, 10);
+    return isNaN(ageNum) || ageNum < 0 || ageNum > 100 ? "INVALID" : ageNum.toString();
   }
 
-  private parseAge(age: any): number | null {
-    if (!age || age.toString().trim() === '') return null; // ✅ 空白年齡
-    const parsedAge = parseInt(age, 10);
-    return isNaN(parsedAge) || parsedAge < 0 || parsedAge > 100 ? null : parsedAge;
+  // ✅ Email 格式驗證，錯誤則標記為 "INVALID"
+  private validateEmail(email: string): string {
+    let atIndex = email.indexOf("@");
+    let dotIndex = email.lastIndexOf(".");
+
+    if (atIndex <= 0 || dotIndex <= atIndex + 1 || dotIndex === email.length - 1) {
+      return "INVALID";
+    }
+    if (email.indexOf("@", atIndex + 1) !== -1) {
+      return "INVALID";
+    }
+    if (email.indexOf("..") !== -1) {
+      return "INVALID";
+    }
+    return email;
   }
 
-  private validateEmail(email: string): boolean {
-    return /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/.test(email);
-  }
-
+  // ✅ 信用卡遮蔽 (前 12 碼變 `****`)
   private maskSensitiveData(data: string): string {
-    return data ? data.replace(/(\d{4})[- ]?(\d{4})[- ]?(\d{4})[- ]?(\d{4})/, '****-****-****-$4') : '';
+    return data.replace(/(\d{4})[- ]?(\d{4})[- ]?(\d{4})[- ]?(\d{4})/, '****-****-****-$4');
   }
 }

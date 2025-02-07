@@ -1,10 +1,10 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { CsvCleanerComponent } from './components/csv-cleaner/csv-cleaner.component';
+import { CsvTabsComponent } from './components/csv-tabs/csv-tabs.component';
 
 const routes: Routes = [
-  { path: '', redirectTo: 'csv-cleaner', pathMatch: 'full' },
-  { path: 'csv-cleaner', component: CsvCleanerComponent }
+  { path: '', redirectTo: 'csv-tabs', pathMatch: 'full' },
+  { path: 'csv-tabs', component: CsvTabsComponent }
 ];
 
 @NgModule({

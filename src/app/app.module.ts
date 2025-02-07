@@ -5,14 +5,20 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { CsvCleanerService } from './services/csv-cleaner.service';
 import { CsvCleanerComponent } from './components/csv-cleaner/csv-cleaner.component';
+import { CsvTabsComponent } from './components/csv-tabs/csv-tabs.component';
+import { CsvCreatorComponent } from './components/csv-creator/csv-creator.component';
+import { FormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
     AppComponent,
-    CsvCleanerComponent
+    CsvCleanerComponent,
+    CsvTabsComponent,
+    CsvCreatorComponent
   ],
   imports: [
     BrowserModule,
+    FormsModule,
     AppRoutingModule
   ],
   providers: [CsvCleanerService],
