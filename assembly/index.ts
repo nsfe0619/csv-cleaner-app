@@ -7,57 +7,63 @@ export function cleanData(ptr: usize, len: i32): usize {
   let csvStr = String.UTF8.decode(buffer, true);
 
   let rows: string[] = csvStr.split("\n");
-  if (rows.length < 2) return ptr; // ✅ 確保 CSV 至少有標題行和數據行
+  if (rows.length < 2) return ptr;
 
   let headers: string[] = rows[0].split(",");
   let cleanedRows: string[] = [];
-  cleanedRows.push(rows[0]); // ✅ 保留第一行標題
+  cleanedRows.push(rows[0]);
 
-  let seenIds: Set<string> = new Set();
+  let seenIds = new Map<string, bool>();
 
-  // ✅ 建立清洗規則 (可擴充)
-  let cleaningRules = new Map<string, (value: string) => string>();
-  cleaningRules.set("email", validateEmail);
-  cleaningRules.set("phone", formatPhone);
-  cleaningRules.set("age", parseAge);
-  cleaningRules.set("credit_card", maskSensitiveData);
+  for (let i: i32 = 1; i < rows.length; i++) {
+    let columns = parseColumns(rows[i], headers.length);
+    if (columns.length !== headers.length) continue;
 
-  for (let i: i32 = 1; i < rows.length; i++) { // ✅ 跳過標題行
-    let columns: string[] = rows[i].split(",");
-    if (columns.length !== headers.length) continue; // ✅ 確保欄位數對齊標題
+    let id = columns[0];
+    if (seenIds.has(id)) continue;
+    seenIds.set(id, true);
 
     let cleanedColumns: string[] = [];
     for (let j: i32 = 0; j < headers.length; j++) {
       let header = headers[j].trim();
       let value = columns[j].trim();
 
-      // ✅ 如果該欄位有清洗規則，則逐個執行
-      if (cleaningRules.has(header)) {
-        let cleanFunc = cleaningRules.get(header);
-        value = cleanFunc(value);
+      if (header == "email") {
+        value = validateEmail(value);
+      } else if (header == "phone") {
+        value = formatPhone(value);
+      } else if (header == "age") {
+        value = parseAge(value);
+      } else if (header == "credit_card") {
+        value = maskSensitiveData(value);
       }
 
-      // ✅ 確保空值變成 "INVALID"
       if (value.length === 0) value = "INVALID";
-
       cleanedColumns.push(value);
     }
 
-    let id = cleanedColumns[0];
-    if (!seenIds.has(id)) {
-      seenIds.add(id);
-      cleanedRows.push(cleanedColumns.join(","));
-    }
+    cleanedRows.push(cleanedColumns.join(","));
   }
 
   let cleanedCsv = cleanedRows.join("\n");
   let encoded = String.UTF8.encode(cleanedCsv);
 
-  let resultPtr = allocate(encoded.byteLength);
-  memory.copy(resultPtr, changetype<usize>(encoded), encoded.byteLength);
-
-  return resultPtr;
+  return changetype<usize>(encoded);
 }
+
+function parseColumns(row: string, columnCount: i32): string[] {
+  let columns: string[] = [];
+  let start: i32 = 0;
+  for (let i: i32 = 0; i < columnCount - 1; i++) {
+    let end = row.indexOf(",", start);
+    if (end === -1) end = row.length;
+    columns.push(row.slice(start, end));
+    start = end + 1;
+  }
+  columns.push(row.slice(start));
+  return columns;
+}
+
 
 // ✅ 格式化電話號碼為 `+1-XXX-XXX-XXXX` 或 `"INVALID"`
 function formatPhone(phone: string): string {

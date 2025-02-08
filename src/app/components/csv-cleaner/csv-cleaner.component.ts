@@ -95,8 +95,11 @@ export class CsvCleanerComponent {
 
   private getCsvPreview(csvData: string): string {
     if (!csvData) return '';
-
-    const parsed = Papa.parse(csvData, { header: true }).data;
+    const parsed = Papa.parse(csvData, { 
+      header: true,
+      skipEmptyLines: true, // ✅ 忽略空行
+      newline: "\n" // ✅ 确保按照 `\n` 换行
+    }).data;
     const previewData = parsed.slice(0, 10); // ✅ 只取前 10 筆
     return Papa.unparse(previewData, { header: true });
   }

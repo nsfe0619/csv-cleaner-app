@@ -22,7 +22,13 @@ export class WasmLoaderService {
       const importObject = {
         env: {
           memory: new WebAssembly.Memory({ initial: 256, maximum: 512 }), // ✅ 確保記憶體存在
-          abort: () => console.log("❌ WASM 中斷！") // ✅ 避免 AssemblyScript 預設 `abort()`
+          abort: () => console.log("❌ WASM 中斷！"), // ✅ 避免 AssemblyScript 預設 `abort()`
+          logError: (ptr: number) => {
+            console.log('ptr',ptr)
+            const message = this.readWasmString(ptr);
+            console.log('message',message)
+            console.error("WASM Error: " + message); // ✅ 让错误显示在 Console
+          },
         }
       };
       const wasmModule = await WebAssembly.instantiate(buffer, importObject);
@@ -60,5 +66,15 @@ export class WasmLoaderService {
     }
 
     return decoder.decode(outputMemory.slice(0, validLength)); // ✅ 只讀取有效長度
+  }
+  private readWasmString(ptr: number): string {
+    if (!this.instance) return "";
+    const memory = this.instance.exports['memory'] as WebAssembly.Memory;
+    const bytes = new Uint8Array(memory.buffer, ptr);
+    let str = "";
+    for (let i = 0; i < bytes.length && bytes[i] !== 0; i++) {
+      str += String.fromCharCode(bytes[i]);
+    }
+    return str;
   }
 }

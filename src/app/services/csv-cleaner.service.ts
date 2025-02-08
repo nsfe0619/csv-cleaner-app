@@ -40,7 +40,7 @@ export class CsvCleanerService {
       return cleanedRow;
     });
 
-    return Papa.unparse(cleanedData, { quotes: true, delimiter: ",", newline: "\n" });
+    return Papa.unparse(cleanedData, {  delimiter: ",", newline: "\n" });
   }
 
   private parseCsv(csvString: string): any[] {
