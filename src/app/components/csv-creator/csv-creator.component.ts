@@ -14,12 +14,12 @@ export class CsvCreatorComponent {
   formattedFileSize: string = ''; // ✅ 顯示的格式化檔案大小
 
   csvFields: { name: string; type: string }[] = [
-    { name: 'ID', type: 'serial' },
-    { name: 'Full Name', type: 'full_name' },
-    { name: 'Birthday', type: 'birthday' },
-    { name: 'Email', type: 'email' },
-    { name: 'Phone', type: 'mobile' },
-    { name: 'Credit Card', type: 'credit_card' }
+    { name: 'id', type: 'serial' },
+    { name: 'name', type: 'full_name' },
+    { name: 'birthday', type: 'birthday' },
+    { name: 'email', type: 'email' },
+    { name: 'phone', type: 'mobile' },
+    { name: 'credit_card', type: 'credit_card' }
   ];
 
   availableTypes = [

@@ -1,8 +1,34 @@
 <div class="cleaner-container">
   <h3>🧹 CSV 清洗工具</h3>
 
-  <!-- ✅ CSV 檔案上傳 -->
-  <input type="file" (change)="handleFileUpload($event)" accept=".csv">
+  <div class="csv-cleaner-container">
+  <!-- 左側: 上傳區域 -->
+  <div class="upload-section">
+    <h3>📂 上傳 CSV 檔案</h3>
+    <input type="file" (change)="handleFileUpload($event)" />
+    <!-- <p>測試資料: <strong>{{ fileName }}</strong></p> -->
+  </div>
+
+  <!-- 右側: 清洗規則 -->
+  <div  *ngIf="fileSizeBefore > 0" class="rules-section">
+    <h3>欄位清洗規則</h3>
+    <table class="rules-table">
+      <thead>
+        <tr>
+          <th>欄位名稱</th>
+          <th>清洗條件</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let header of headers">
+          <td>{{ header }}</td>
+          <td>{{ cleaningRules[header].join(', ') }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 
   <!-- ✅ 顯示原始檔案資訊 -->
   <div *ngIf="fileSizeBefore > 0">
@@ -15,15 +41,16 @@
     <pre>{{ rawCsvPreview }}</pre>
   </div>
 
-  <button (click)="processCsvJs()">⚡ 使用 JavaScript 清洗</button>
-  <button (click)="processCsvWasm()">⚡ 使用 WASM 清洗</button>
+  <button  *ngIf="fileSizeBefore > 0" (click)="processCsvJs()">⚡ 使用 JavaScript 清洗</button>
+  <button  *ngIf="fileSizeBefore > 0" (click)="processCsvWasm()">⚡ 使用 WASM 清洗</button>
+
+  <hr>
 
   <!-- ✅ 顯示清洗後的檔案大小 & 耗時 -->
   <div *ngIf="fileSizeAfterJs > 0">
     <p>📁 JavaScript 清洗後檔案大小: <strong>{{ formattedFileSizeAfterJs }}</strong></p>
     <p>⏱ JavaScript 清洗時間: <strong>{{ cleaningTimeJs }} 毫秒</strong></p>
   </div>
-
   <div *ngIf="fileSizeAfterWasm > 0">
     <p>📁 WASM 清洗後檔案大小: <strong>{{ formattedFileSizeAfterWasm }}</strong></p>
     <p>⏱ WASM 清洗時間: <strong>{{ cleaningTimeWasm }} 毫秒</strong></p>
@@ -40,6 +67,6 @@
     <pre>{{ cleanedCsvWasmPreview }}</pre>
   </div>
 
-  <button (click)="downloadCsv('js')">⬇️ 下載 JavaScript 清洗後 CSV</button>
-  <button (click)="downloadCsv('wasm')">⬇️ 下載 WASM 清洗後 CSV</button>
+  <button  *ngIf="fileSizeBefore > 0" (click)="downloadCsv('js')">⬇️ 下載 JavaScript 清洗後 CSV</button>
+  <button  *ngIf="fileSizeBefore > 0" (click)="downloadCsv('wasm')">⬇️ 下載 WASM 清洗後 CSV</button>
 </div>

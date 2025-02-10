@@ -27,6 +27,10 @@ export class CsvCleanerService {
       headers.forEach(header => {
         let value = row[header]?.trim() || "";
 
+        console.log('header',header);
+        console.log('cleaningRules',cleaningRules);
+        console.log('cleaningRules[header]',cleaningRules[header]);
+
         // ✅ 如果該欄位有對應的清洗規則，則逐個執行
         if (cleaningRules[header]) {
           cleaningRules[header].forEach(rule => {
@@ -43,7 +47,7 @@ export class CsvCleanerService {
     return Papa.unparse(cleanedData, {  delimiter: ",", newline: "\n" });
   }
 
-  private parseCsv(csvString: string): any[] {
+  parseCsv(csvString: string): any[] {
     return Papa.parse(csvString, { header: true, skipEmptyLines: true }).data;
   }
 
@@ -54,10 +58,12 @@ export class CsvCleanerService {
 
   // ✅ 格式化電話號碼為 `+1-XXX-XXX-XXXX`
   private formatPhone(phone: string): string {
+    console.log('formatPhone')
     let digits = phone.replace(/\D/g, '');
     if (digits.length === 0) return "INVALID"; // ✅ 空值變 "INVALID"
     if (digits.length < 10) return "+1-000-000-0000"; // ✅ 不足 10 碼填 0
     digits = digits.slice(-10);
+    console.log('digits',digits)
     return `+1-${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
   }
 
