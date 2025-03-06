@@ -65,13 +65,13 @@ function parseColumns(row: string, columnCount: i32): string[] {
 }
 
 
-// ✅ 格式化電話號碼為 `+1-XXX-XXX-XXXX` 或 `"INVALID"`
+// ✅ 格式化電話號碼為 `+886-XXX-XXX-XXX` 或 `"INVALID"`
 function formatPhone(phone: string): string {
   let digits = removeNonDigits(phone);
   if (digits.length === 0) return "INVALID";
-  if (digits.length < 10) return "+1-000-000-0000";
+  if (digits.length < 10) return "+886-000-000-000";
   digits = digits.slice(-10);
-  return "+1-" + digits.slice(0, 3) + "-" + digits.slice(3, 6) + "-" + digits.slice(6);
+  return "+886-" + digits.slice(1, 4) + "-" + digits.slice(4, 7) + "-" + digits.slice(7);
 }
 
 // ✅ 年齡轉換成數字，異常則標記為 INVALID
